@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-#  Python script to blink the last octet of the IP address on the activity LED.
+#  Python script to blink the last octets of the IP address on the activity LED.
 #  To be run as root after startup (from crontab, using @reboot)
 #
 #  Blinks last octet of IP4 address, or last two if second last octet is not 0.
@@ -20,7 +20,11 @@ romans = ["X","I","II","III","IV","V","VI","VII","VIII","IX"]
 import time, socket, os, sys, subprocess
 
 
-if len(sys.argv) == 2 and sys.argv[1] == "install":
+if len(sys.argv) == 2:
+    if sys.argv[1] != "install":
+        print("The only option for this script is 'install'")
+        sys.exit()
+
     # Install blink_ip to run at startup, must run as root.
     a = os.system ("cp "+sys.argv[0]+" /root/blink_ip.py")
     if (a):
@@ -44,7 +48,6 @@ if len(sys.argv) == 2 and sys.argv[1] == "install":
 
     print("blink_ip.py added to crontab of root")
     sys.exit()
-
 
 
 def get_ip4_addr():
@@ -112,3 +115,6 @@ for n in range(10):
 
 ledfile.write("0");
 ledfile.close()
+
+with open ("/sys/class/leds/led0/trigger","w") as trig:
+    trig.write("mmc0") # Restore act LED to trigger on file access.
