@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #  Python script to blink the last octets of the IP address on the activity LED.
 #  To be run as root after startup (from crontab, using @reboot)
 #
@@ -6,8 +6,6 @@
 #
 #  Each digit is blinked as a roman numberal, with I being a short blink,
 #     V a medium blink, and X a long blink.
-#
-romans = ["X","I","II","III","IV","V","VI","VII","VIII","IX"]
 #
 #  For example: 0 is blinked as (X), one long blink, 1 (I) is a short blink,
 #     4 (IX) is a short followed by a medium blink
@@ -17,104 +15,203 @@ romans = ["X","I","II","III","IV","V","VI","VII","VIII","IX"]
 #
 #  Matthias Wandel, August 2020
 
-import time, socket, os, sys, subprocess
+import sys
+import os
+import time
+import socket
+import argparse
+import logging as log
+
+ROMANS = ("X", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX")
+
+ROMAN_DURATIONS = {
+    "I": 0.1,
+    "V": 0.4,
+    "X": 1.2,
+}
+
+DELAY_BETWEEN_ROMAN_DIGITS = 3.0
+DELAY_DOT = 1.0
+
+RETURN_CODE_INSTALL_ROOT = 1
+RETURN_CODE_ALREADY_INSTALLED = 2
 
 
-if len(sys.argv) == 2:
-    if sys.argv[1] != "install":
-        print("The only option for this script is 'install'")
-        sys.exit()
+def parse_args():
+    """
+    Parse command line arguments
+    """
+    parser = argparse.ArgumentParser(description="Blink the IP address on GPIO")
+    parser.add_argument("install", help="Install to run at startup", nargs="?")
+    parser.add_argument(
+            "--log-level", dest="loglevel",
+            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+            help="Set the logging level")
 
-    # Install blink_ip to run at startup, must run as root.
-    a = os.system ("cp "+sys.argv[0]+" /root/blink_ip.py")
-    if (a):
-        print("Must run blink_ip.py install as root")
-        sys.exit();
-
-    a = subprocess.run(['crontab','-l'],capture_output=True)
-    if a.returncode:
-        print (a.stdout)
-        sys.exit()
-
-    cron_lines = a.stdout.decode()
-
-    if cron_lines.find("/root/blink_ip.py") > 0:
-        print ("blink_ip.py is Already on crontab of root")
-        sys.exit()
-
-    cron_lines = cron_lines+'@reboot /root/blink_ip.py\n'
-
-    cur_cron = subprocess.run(['crontab','-'], input=cron_lines.encode())
-
-    print("blink_ip.py added to crontab of root")
-    sys.exit()
+    return parser.parse_args()
 
 
-def get_ip4_addr():
-    # get_ip() from https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
-    # gets the primary IP address.
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(('10.255.255.255', 1)) # doesn't even have to be reachable
-        IP = s.getsockname()[0]
-    except Exception:
-        IP = '127.0.0.1'
-    finally:
-        s.close()
-    return IP
+class LED():
+    """
+    LED abstraction
+    """
 
-def blink_led(duration):
-    ledfile.write(on);
-    ledfile.flush()
-    time.sleep(duration)
-    ledfile.write(off);
-    ledfile.flush()
-    time.sleep(0.2)
+    def __init__(self, file="/sys/class/leds/led0/brightness"):
+        self.file = open(file, "w")
+        self.ON, self.OFF = "1", "0"
 
-ledfile = open ("/sys/class/leds/led0/brightness","w")
-on="1";off="0"
-if not os.path.isdir("/sys/class/leds/led1"):
-    print("Is pi zero"); # Activity LED on pi zero is backwards because it also indicates power.
-    on="0";off="1"
+        # Activity LED on pi Zero is reverse because it also indicates power
+        if not os.path.isdir("/sys/class/leds/led1"):
+            log.info("Pi Zero detected")
+            self.ON, self.OFF = self.OFF, self.ON
 
-last_ip = ""
-samecount = 0
-for n in range(30): # Wait up to 30 seconds to get real IP address.
-    time.sleep(1)
-    ip = get_ip4_addr()
-    print("ip =",ip)
-    if ip != "127.0.0.1":
-        if (ip == last_ip): # Sometimes get a bogus IP address befor real one.
-            samecount += 1
-            if samecount >= 2: break;
-        last_ip = ip
-    else:
-        ip="0.000" # Blink three zeros if no real IP address
+    def set_state(self, state):
+        log.debug("setting LED state to %s", state)
+        self.file.write(state)
+        self.file.flush()
 
-nums = ip.split(".")
-if nums[-2] == "0":
-    iplo = nums[-1] # Blink last octet only.
-else:
-    iplo = nums[-2] + "." + nums[-1] # Blink last two octets
+    def blink(self, duration):
+        log.debug("blinking LED for %.1fs", duration)
+        self.set_state(self.ON)
+        time.sleep(duration)
 
-blink_led(0)
-for n in range(10):
-    time.sleep(3)
-    for digit in iplo:
-        if digit == ".":
-            time.sleep(1)
-            continue
-        roman = romans[eval(digit)]
-        print ("blinking ",digit,roman)
-        for sym in roman:
-            if sym == 'I': blink_led(0.1)
-            if sym == 'V': blink_led(0.4)
-            if sym == 'X': blink_led(1.2)
+        self.set_state(self.OFF)
+        time.sleep(0.2)
+
+    def blink_number_as_roman(self, snum, count=10):
+        """
+        Takes a number as string and blinks the LED according to its
+        roman representation.
+        """
+        for n in range(count):
+            time.sleep(DELAY_BETWEEN_ROMAN_DIGITS)
+
+            for digit in snum:
+                if digit == ".":
+                    time.sleep(DELAY_DOT)
+                    continue
+
+                d = int(digit)
+                roman = ROMANS[d]
+                log.debug("blinking: %d, %s", d, roman)
+                for sym in roman:
+                    self.blink(ROMAN_DURATIONS[sym])
+                time.sleep(1)
+
+
+def IPv4_digits(timeout=30):
+    """
+    Returns up to the last two numbers of the primary IP address
+    """
+
+    def IPv4_addr():
+        """
+        Gets the primary IP address.
+        get_ip() from https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
+        """
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            try:
+                s.connect(("1.2.3.4", 1))  # doesn"t even have to be reachable
+                return s.getsockname()[0]
+            except socket.gaierror:
+                pass
+
+    last_ip, samecount = "", 0
+
+    # Wait up to 30 seconds to get real IP address.
+    for n in range(timeout):
         time.sleep(1)
-    print()
 
-ledfile.write("0");
-ledfile.close()
+        ip = IPv4_addr()
+        log.debug("ip = %s", ip)
 
-with open ("/sys/class/leds/led0/trigger","w") as trig:
-    trig.write("mmc0") # Restore act LED to trigger on file access.
+        if ip is not None:
+            # Sometimes we get a bogus IP address befor valid one.
+            if ip == last_ip:
+                samecount += 1
+                if samecount >= 2:
+                    break
+            last_ip = ip
+        else:
+            # Blink three zeros if no real IP address
+            ip = "0.000"
+
+    nums = ip.split(".")
+    if nums[-2] == "0":
+        # Blink last octet only.
+        return nums[-1]
+
+    # Blink last two octets
+    return ".".join(nums[-2:])
+
+
+def crontab_install():
+    """
+    Adds the script to the root user's crontab
+    """
+
+    from crontab import CronTab
+
+    try:
+        cron = CronTab(user="root")
+    except IOError:
+        log.error("Superuser privileges required to manipulate root's crontab")
+        return RETURN_CODE_INSTALL_ROOT
+
+    # Isolate the script filename
+    script_name = os.path.basename(sys.argv[0])
+
+    # Make sure the script is not yet in the crontab
+    for job in cron:
+        if script_name in job.command:
+            log.warning("%s is already on crontab of root", script_name)
+            return RETURN_CODE_ALREADY_INSTALLED
+
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    command = os.path.join(script_dir, script_name)
+
+    # Create a new crontab entry
+    job = cron.new(command=command)
+
+    # @reboot
+    job.every_reboot()
+
+    # Commit the changes
+    cron.write()
+
+    log.info("%s added to crontab of user root", script_name)
+
+
+def main():
+    args = parse_args()
+    log.debug(args)
+
+    # Log level
+    log.root.setLevel(getattr(log, args.loglevel) if args.loglevel else log.INFO)
+
+    # Installation in crontab
+    if args.install:
+        return crontab_install()
+
+    # Get the last number of the IP address
+    iplo = IPv4_digits()
+
+    log.info("Found primary IPv4 address' low digits: %s", iplo)
+
+    # Turn off the LED
+    led = LED()
+    led.set_state(led.OFF)
+
+    # Blink the number
+    led.blink_number_as_roman(iplo)
+
+    # Turn off the LED
+    led.set_state(led.OFF)
+
+    # Restore act LED to trigger on file access.
+    with open("/sys/class/leds/led0/trigger", "w") as trig:
+        trig.write("mmc0")
+
+
+if __name__ == "__main__":
+    sys.exit(main())
