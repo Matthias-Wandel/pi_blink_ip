@@ -1,23 +1,10 @@
-<html>
-<head>
-<title>Blink IP address on headless Raspberry Pi</title>
-<style type=text/css>
-  body { font-family: sans-serif; font-size: 100%;}
-  img { margin-right: 20px; margin-top:0px; margin-bottom:10px; border: 0px;}
-  img.r { margin-left: 12px; margin-right: 0px; float: right;}
-  div.th { float:left; box-sizing: border-box; width:190px; height:190px; padding-right:25px; }
-  div.th img { width: 160; height: 105; margin-right: 12px;
-    margin-bottom:4px; border-width:1px; border-style:solid; display: block; background-color: #a0a0a0;}
-</style></head>
-<table align=center cellpadding=0 cellspacing=0><td width=1150>
 <h1>Blink IP address on headless Raspberry Pi</h1>
-
-<iframe width="1024" height="576" src="https://youtube.com/embed/XbJ5vT8FvXU" frameborder="0" allowfullscreen></iframe>
+On YouTube: https://youtube.com/embed/XbJ5vT8FvXU
 <p>
 I often have this problem.  I have a headless (no monitor or keyboard) Raspberry Pi,
 put a flash card in already configured for my network (using another Raspberry Pi), 
 and it connects to my network.  But I don't what IP address my DHCP server assigned to it,
-so I can't connect to it via SSH or WWW.
+so I can't connect to it via SSH.
 <p>
 I can look on my router to see what address was just assigned, but that's awkward and not practical
 if it's on someone else's Wi-Fi network.
