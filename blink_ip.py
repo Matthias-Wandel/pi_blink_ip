@@ -29,7 +29,7 @@ if len(sys.argv) == 2:
     a = os.system ("cp "+sys.argv[0]+" /root/blink_ip.py")
     if (a):
         print("Must run blink_ip.py install as root")
-        ys.exit();
+        sys.exit();
 
     a = subprocess.run(['crontab','-l'],capture_output=True)
     if a.returncode:
