@@ -10,7 +10,7 @@
 romans = ["X","I","II","III","IV","V","VI","VII","VIII","IX"]
 #
 #  For example: 0 is blinked as (X), one long blink, 1 (I) is a short blink,
-#     4 (IX) is a short followed by a medium blink
+#     4 (IV) is a short followed by a medium blink
 #
 #  Install to run at startup with this comment:
 #      sudo blink_ip.py install
