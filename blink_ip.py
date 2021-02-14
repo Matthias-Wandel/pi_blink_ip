@@ -38,11 +38,11 @@ if len(sys.argv) == 2:
 
     cron_lines = a.stdout.decode()
 
-    if cron_lines.find("/root/blink_ip.py") > 0:
+    if cron_lines.find("/root/pi_blink_ip/blink_ip.py") > 0:
         print ("blink_ip.py is Already on crontab of root")
         sys.exit()
 
-    cron_lines = cron_lines+'@reboot /root/blink_ip.py\n'
+    cron_lines = cron_lines+'@reboot /root/pi_blink_ip/blink_ip.py\n'
 
     cur_cron = subprocess.run(['crontab','-'], input=cron_lines.encode())
 
