@@ -63,7 +63,7 @@ To set it up to run at boot, from the directory that you put blink_ip.py into, j
 You can get this this script from github here<br>
 <a href="https://github.com/Matthias-Wandel/pi_blink_ip">https://github.com/Matthias-Wandel/pi_blink_ip</a>
 <p>
-Or by typing<b><pre>git clone https://github.com/Matthias-Wandel/blink_ip</pre></b>
+Or by typing<b><pre>git clone https://github.com/Matthias-Wandel/pi_blink_ip.git</pre></b>
 <p>
 or via this link: <a href="blink_ip.py">http://woodgears.ca/tech/blink_ip.py</a>
 <p><br>
