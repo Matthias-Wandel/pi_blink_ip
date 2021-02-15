@@ -2,6 +2,16 @@
 #  Python script to blink the last octets of the IP address on the activity LED.
 #  To be run as root after startup (from crontab, using @reboot)
 #
+
+import time, socket, os, sys, subprocess, shutil
+
+#apt-get install python3-pip
+#pip3-install python-crontab
+from crontab import CronTab
+
+installation_destination = "/root/pi_blink_ip/blink_ip.py"
+this_script_location = os.path.abspath(__file__)
+
 #  Blinks last octet of IP4 address, or last two if second last octet is not 0.
 #
 #  Each digit is blinked as a roman numberal, with I being a short blink,
@@ -17,38 +27,43 @@ romans = ["X","I","II","III","IV","V","VI","VII","VIII","IX"]
 #
 #  Matthias Wandel, August 2020
 
-import time, socket, os, sys, subprocess
-
-
 if len(sys.argv) == 2:
     if sys.argv[1] != "install":
         print("The only option for this script is 'install'")
         sys.exit()
 
     # Install blink_ip to run at startup, must run as root.
-    a = os.system ("cp "+sys.argv[0]+" /root/blink_ip.py")
-    if (a):
-        print("Must run blink_ip.py install as root")
-        sys.exit();
-
-    a = subprocess.run(['crontab','-l'],capture_output=True)
-    if a.returncode:
-        print (a.stdout)
+    user = os.geteuid()
+    if user != 0:
+        print("You need to be root to install - currently " + user)
         sys.exit()
 
-    cron_lines = a.stdout.decode()
-
-    if cron_lines.find("/root/blink_ip.py") > 0:
-        print ("blink_ip.py is Already on crontab of root")
+    try:
+        shutil.copyfile (this_script_location, installation_destination)
+    except shutil.SameFileError:
+        print("Same file detected - skipping : (" + this_script_location + " -> " + installation_destination + ")")
+    except Exception as e:
+        print(e)
         sys.exit()
 
-    cron_lines = cron_lines+'@reboot /root/blink_ip.py\n'
+    cron = CronTab( user = "root")
+    install = False
 
-    cur_cron = subprocess.run(['crontab','-'], input=cron_lines.encode())
+    if len(cron) == 0:
+        print("No jobs installed at all")
+        install = True
 
-    print("blink_ip.py added to crontab of root")
-    sys.exit()
+    jobs = cron.find_command('pi_blink_ip')
+    for job in jobs:
+        if len(job) > 0:
+            print("Job already installed")
+            install = False
 
+    if install == True:
+        print("Job not found - installing")
+        job = cron.new(command = installation_destination)
+        job.every_reboot()
+        cron.write( user = "root")
 
 def get_ip4_addr():
     # get_ip() from https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
