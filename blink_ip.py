@@ -25,6 +25,8 @@ if len(sys.argv) == 2:
         print("The only option for this script is 'install'")
         sys.exit()
 
+    print ("Installing pi_blink_ip to run at startup")
+    
     # Install blink_ip to run at startup, must run as root.
     a = os.system ("cp "+sys.argv[0]+" /root/blink_ip.py")
     if (a):
@@ -33,10 +35,17 @@ if len(sys.argv) == 2:
 
     a = subprocess.run(['crontab','-l'],capture_output=True)
     if a.returncode:
-        print (a.stdout)
-        sys.exit()
-
-    cron_lines = a.stdout.decode()
+        if a.stderr.decode().startswith("no crontab for root"):
+            # No crontab exists yet, so create one on the fly
+            print("No crontab exists yet, so we'll make one")
+            cron_lines = ""
+        else:
+            # some other error. Print the error and stop execution
+            print (a.stdout.decode())
+            print (a.stderr.decode())
+            sys.exit()
+    else:
+        cron_lines = a.stdout.decode()
 
     if cron_lines.find("/root/blink_ip.py") > 0:
         print ("blink_ip.py is Already on crontab of root")
