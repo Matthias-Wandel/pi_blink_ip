@@ -31,12 +31,12 @@ that the last two octets blinked out don't match your network at all.
 <tr><th>IP4 address<th>Digits blinked<th>Roman digits<th>Blink pattern
 <tr><td>192.168.0.105<td><center>105<td><center>I X V<td>
     <center><b>&bull; &nbsp; &mdash; &nbsp; &bull; -</b>
-<tr><td>192.168.2.349<td><center>2 349<td><center>II &nbsp; III IV IX<td>
-    <center><b>&bull; &bull; &nbsp; &nbsp; &nbsp; &bull; &bull; &bull; &nbsp; &bull; - &nbsp; &bull; &mdash;</b>
-<tr><td>10.10.456.789<td><center>456 789<td><center>IV V VI &nbsp; VII VIII IX<td>
-    <center><b>&bull; - &nbsp; - &nbsp; - &bull;
+<tr><td>192.168.3.249<td><center>3 249<td><center>III &nbsp; II IV IX<td>
+    <center><b>&bull; &bull; &bull; &nbsp; &nbsp; &nbsp; &bull; &bull; &nbsp; &bull; - &nbsp; &bull; &mdash;</b>
+<tr><td>10.10.456.789<td><center>176 239<td><center>I VII VI &nbsp; II III IX<td>
+    <center><b>&bull; &nbsp; - &bull; &bull; &nbsp; - &bull;
     &nbsp; &nbsp; &nbsp;
-    - &bull; &bull; &nbsp;  - &bull; &bull; &bull; &nbsp; &bull; &mdash;</b>
+    &bull; &bull; &nbsp;  &bull; &bull; &bull; &nbsp; &bull; &mdash;</b>
 <tr><td>None (just 127.0.0.1)<td><center>000<td><center>X X X<td>
     <center><b>&mdash; &nbsp; &mdash; &nbsp; &mdash;</b>
 
