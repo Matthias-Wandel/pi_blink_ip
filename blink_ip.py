@@ -15,7 +15,8 @@ romans = ["X","I","II","III","IV","V","VI","VII","VIII","IX"]
 #  Install to run at startup with this comment:
 #      sudo blink_ip.py install
 #
-#  Matthias Wandel, August 2020
+#  Matthias Wandel, August 2020, 
+#  Revised Jun2 2024 for Bookworm (Pi os 12)
 
 import time, socket, os, sys, subprocess
 
@@ -73,18 +74,18 @@ def get_ip4_addr():
     return IP
 
 def blink_led(duration):
-    ledfile.write(on);
+    ledfile.write("1");
     ledfile.flush()
     time.sleep(duration)
-    ledfile.write(off);
+    ledfile.write("0");
     ledfile.flush()
     time.sleep(0.2)
 
-ledfile = open ("/sys/class/leds/led0/brightness","w")
-on="1";off="0"
-if not os.path.isdir("/sys/class/leds/led1"):
-    print("Is pi zero"); # Activity LED on pi zero is backwards because it also indicates power.
-    on="0";off="1"
+if os.path.isdir("/sys/class/leds/ACT"): # on bookworm.
+    led_dir = "/sys/class/leds/ACT/"
+else:
+    led_dir = "/sys/class/leds/led0/" # Older OS
+ledfile = open (led_dir+"brightness","w")
 
 last_ip = ""
 samecount = 0
@@ -107,7 +108,7 @@ else:
     iplo = nums[-2] + "." + nums[-1] # Blink last two octets
 
 blink_led(0)
-for n in range(10):
+for n in range(5):
     time.sleep(3)
     for digit in iplo:
         if digit == ".":
@@ -125,5 +126,5 @@ for n in range(10):
 ledfile.write("0");
 ledfile.close()
 
-with open ("/sys/class/leds/led0/trigger","w") as trig:
+with open (led_dir+"/trigger","w") as trig:
     trig.write("mmc0") # Restore act LED to trigger on file access.
